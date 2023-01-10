@@ -16,7 +16,7 @@ def reshape(image, scale_factor: float) -> np.ndarray:
     :rtype: np.ndarray
     """
     new_shape = np.round(np.array(image.shape[:2]) * scale_factor).astype(np.uint)
-    reshaped = np.zeros((*new_shape, 3))
+    reshaped = np.zeros((*new_shape, 3), dtype=image.dtype)
 
     for x in range(new_shape[0]):
         for y in range(new_shape[1]):
