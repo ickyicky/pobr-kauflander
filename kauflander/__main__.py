@@ -2,6 +2,7 @@ import argparse
 import cv2
 import numpy as np
 from .color_conversion import convert_bgr_to_csv
+from .reshape import reshape
 
 
 if __name__ == "__main__":
@@ -14,4 +15,5 @@ if __name__ == "__main__":
     image = cv2.imread(args.INPUT)
     converted = convert_bgr_to_csv(image)
     converted = cv2.cvtColor(converted, cv2.COLOR_HSV2BGR)
-    cv2.imwrite(args.OUTPUT, converted)
+    reshaped = reshape(image, 0.5)
+    cv2.imwrite(args.OUTPUT, reshaped)

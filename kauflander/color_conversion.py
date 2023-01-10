@@ -4,6 +4,9 @@ import numpy as np
 def convert_bgr_to_csv(image: np.ndarray) -> np.ndarray:
     """convert_bgr_to_csv.
 
+    Algorithm inspired by wikipedia formulas for HSV
+    https://en.wikipedia.org/wiki/HSL_and_HSV
+
     :param image:
     :type image: np.ndarray
     :rtype: np.ndarray
