@@ -1,8 +1,8 @@
 import numpy as np
 
 
-def convert_bgr_to_csv(image: np.ndarray) -> np.ndarray:
-    """convert_bgr_to_csv.
+def convert_bgr_to_hsv(image: np.ndarray) -> np.ndarray:
+    """convert_bgr_to_hsv.
 
     Algorithm inspired by wikipedia formulas for HSV
     https://en.wikipedia.org/wiki/HSL_and_HSV

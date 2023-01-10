@@ -1,9 +1,10 @@
 import argparse
 import cv2
 import numpy as np
-from .color_conversion import convert_bgr_to_csv
+from .color_conversion import convert_bgr_to_hsv
 from .reshape import reshape
 from .filter import filter_gaussian, filter_median
+from .histogram import equallize_histogram
 
 
 if __name__ == "__main__":
@@ -27,19 +28,26 @@ if __name__ == "__main__":
     parser.add_argument(
         "-m", "--filter-median", action="store_true", help="filter with median filter"
     )
+    parser.add_argument(
+        "-e", "--equallize-histogram", action="store_true", help="equallize histogram"
+    )
 
     args = parser.parse_args()
 
     image = cv2.imread(args.INPUT)
 
-    reshaped = reshape(image, args.size_factor)
+    subject = reshape(image, args.size_factor)
 
     if args.filter_gaussian:
-        reshaped = filter_gaussian(reshaped)
+        subject = filter_gaussian(subject)
 
     if args.filter_median:
-        reshaped = filter_median(reshaped)
+        subject = filter_median(subject)
 
-    converted = convert_bgr_to_csv(reshaped)
-    converted = cv2.cvtColor(converted, cv2.COLOR_HSV2BGR)
-    cv2.imwrite(args.OUTPUT, reshaped)
+    subject = convert_bgr_to_hsv(subject)
+
+    if args.equallize_histogram:
+        subject = equallize_histogram(subject, 2)
+
+    subject = cv2.cvtColor(subject, cv2.COLOR_HSV2BGR)
+    cv2.imwrite(args.OUTPUT, subject)
