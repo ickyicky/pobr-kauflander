@@ -5,7 +5,7 @@ from .color_conversion import convert_bgr_to_hsv
 from .reshape import reshape
 from .filter import filter_gaussian, filter_median
 from .histogram import equallize_histogram
-from .segmentation import threshold
+from .segmentation import threshold, flood_fill
 
 
 if __name__ == "__main__":
@@ -53,11 +53,12 @@ if __name__ == "__main__":
     mask = threshold(subject, (0, 140, 40), (20, 255, 255)) | threshold(
         subject, (170, 140, 40), (255, 255, 255)
     )
+    segments_mask, segments_colors = flood_fill(mask)
 
     subject = cv2.cvtColor(subject, cv2.COLOR_HSV2BGR)
 
     if args.OUTPUT:
         cv2.imwrite(args.OUTPUT, subject)
     else:
-        cv2.imshow("Result of detection", mask)
+        cv2.imshow("Result of detection", segments_mask)
         cv2.waitKey(0)
