@@ -59,9 +59,10 @@ def flood_fill(
 
         chosen = available_segments[np.random.choice(available_segments.shape[0])]
 
-        while (color := np.random.randint(0, 255, 3)) in colors:
+        while (color := tuple(np.random.randint(0, 255, 3))) in colors:
             pass
 
+        colors.append(color)
         point_queue = [chosen]
 
         while point_queue:

@@ -1,5 +1,6 @@
 import numpy as np
 from enum import Enum
+from typing import Tuple
 
 
 def reshape(image, scale_factor: float) -> np.ndarray:
@@ -15,24 +16,39 @@ def reshape(image, scale_factor: float) -> np.ndarray:
     :type scale_factor: float
     :rtype: np.ndarray
     """
-    new_shape = np.round(np.array(image.shape[:2]) * scale_factor).astype(np.uint)
+    shape = image.shape[:2]
+    new_shape = np.round(np.array(shape) * scale_factor).astype(np.uint)
     reshaped = np.zeros((*new_shape, 3), dtype=image.dtype)
 
     for x in range(new_shape[0]):
         for y in range(new_shape[1]):
-            prim_coords = np.array((x, y)) / scale_factor
-            base_coords = np.floor(prim_coords)
-
-            neighbours = np.array(
-                (
-                    base_coords,
-                    np.mod(base_coords + (0, 1), image.shape[:2]),
-                    np.mod(base_coords + (1, 0), image.shape[:2]),
-                    np.mod(base_coords + (1, 1), image.shape[:2]),
-                )
-            ).astype(np.uint)
-            distances = np.sqrt(np.sum(np.power(neighbours - prim_coords, 2), 1))
-            lowest_distance = np.argmin(distances)
-            reshaped[x, y] = image[tuple(neighbours[lowest_distance])]
+            reshaped[x, y] = image[get_nearest_neighbour((x, y), scale_factor, shape)]
 
     return reshaped
+
+
+def get_nearest_neighbour(
+    point: Tuple[int, int], scale_factor: float, shape: Tuple[int, int]
+) -> Tuple[int, int]:
+    """get_nearest_neighbour.
+
+    :param point:
+    :type point: Tuple[int, int]
+    :param scale_factor:
+    :type scale_factor: float
+    :rtype: Tuple[int, int]
+    """
+    prim_coords = np.array(point) / scale_factor
+    base_coords = np.floor(prim_coords)
+
+    neighbours = np.array(
+        (
+            base_coords,
+            np.mod(base_coords + (0, 1), shape),
+            np.mod(base_coords + (1, 0), shape),
+            np.mod(base_coords + (1, 1), shape),
+        )
+    ).astype(np.uint)
+    distances = np.sqrt(np.sum(np.power(neighbours - prim_coords, 2), 1))
+    lowest_distance = np.argmin(distances)
+    return tuple(neighbours[lowest_distance])
