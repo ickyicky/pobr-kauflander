@@ -171,7 +171,7 @@ Wynik podziału na segmenty przedstawiony został na rysunku \ref{segmenty}.
 \subfigure[]{\includegraphics[width=.49\textwidth]{../data/kaufland3.png}}
 \subfigure[]{\includegraphics[width=.49\textwidth]{media/segments.png}}
 \caption{Porównanie zdjęcia i otrzymanych segmentów}
-\label{segments}
+\label{segmenty}
 \end{figure}
 
 ### Wyznaczanie cech
@@ -182,8 +182,22 @@ Dla każdego momentu obliczane są wartości niezmienniczych momentów M1-M6 ora
 
 ### Indentyfikacja kształtów
 
-Na zbiorze danych wyznaczono wartości graniczne dla wyznaczonych cech pozwalające na identyfikację: trójkątów, kwardatów oraz ramki. Na rysunku \ref{trojkaty_i_kwardaty} przedstawiono wyniki identyfikacji zadanych kształtów.
+Na zbiorze danych wyznaczono wartości graniczne dla wyznaczonych cech pozwalające na identyfikację: trójkątów, kwardatów oraz ramki. Wartości te przedstawiono w tabeli \ref{cechy}. Na rysunku \ref{trojkaty_i_kwardaty} przedstawiono wyniki identyfikacji zadanych kształtów.
 
+\begin{table}[]
+\begin{tabular}{|ll|l|l|l|l|l|l|l|l|}
+\hline
+\multicolumn{2}{|l|}{kształt}                        & M1 & M2 & M3 & M4 & M5 & M6 & M7 & W4 \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{trójkąt}} & min & 0.2 & 0.0072 & 0.0028 & 0.0001 & -384.0 & -0.000285 & 0.0078 & 0.83\\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                         & max & 0.231 & 0.016 & 0.0063 & 0.00031 & 660.432 & 1.68798e-05 & 0.0096 & 0.885\\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{kwadrat}} & min & 0.164 & 2.149e-05 & 0.0 & 0.0 & -0.05 & -4.513e-07 & 0.0066 & 0.9643 \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                         & max & 0.17115 & 0.001381 & 4.042e-05 & 8.95e-07 & 0.002 & 6.242e-07 & 0.007 & 0.985 \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{ramka}}   & min & 1.38 & 0.00045 & -0.0167 & -0.0075 & -201e9 & -46230.5029 & 0.47 & 0.26 \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                         & max & 2.304 & 0.1105 & 0.0182 & 0.01536 & 272345e9 & 25.18 & 1.33 & 0.34 \\ \hline
+\end{tabular}
+\caption{wyznaczone zakresy cech dla poszczególnych kształtów}
+\label{cechy}
+\end{table}
 
 \begin{figure}[H]
 \centering
