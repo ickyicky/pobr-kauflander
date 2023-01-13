@@ -54,7 +54,7 @@ def recognize_logo(
         segments = triangles + squares
         segments.append(frame)
 
-        if len(triangles) >= 2 and len(squares) >= 2 and len(set(segments)) >= 5:
+        if len(triangles) == 2 and len(squares) == 2 and len(set(segments)) == 5:
             recognized_logos.append((bounding_box, segments))
 
     return recognized_logos
