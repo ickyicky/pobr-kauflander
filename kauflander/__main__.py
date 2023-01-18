@@ -75,6 +75,11 @@ if __name__ == "__main__":
         action="store_true",
         help="shows all recognized shapes",
     )
+    parser.add_argument(
+        "--show-enhanced",
+        action="store_true",
+        help="shows image after all enhancing is done",
+    )
 
     moments = {
         "triangle": {
@@ -171,6 +176,10 @@ if __name__ == "__main__":
 
     if args.equallize_histogram:
         subject = equallize_histogram(subject, 2)
+
+    if args.show_color_mask:
+        cv2.imshow("enhanced", subject)
+        cv2.waitKey(0)
 
     mask = threshold(subject, red_bounds[0]["min"], red_bounds[0]["max"]) | threshold(
         subject, red_bounds[1]["min"], red_bounds[1]["max"]

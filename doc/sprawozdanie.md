@@ -120,6 +120,45 @@ Ponieważ jakoś zdjęć ze zbioru danych jest bardzo dobra, wykorzystanie tych 
 
 Filtry gaussa i medianowy są użyteczne przy przetwarzaniu w pełnej rozdzielczości, bez skalowania. Pozwalają one na dokładniejszą segmentację obiektów, co uniemożliwia delikatny szum np. dla zdjęcia 2. Natomiast zastosowanie ich przy skali 0.5 prowadzi do nie rozpoznania małych logo, ponieważ łączy ze sobą ich składowe elementy rozdzielone momentami jedynie jednym pikselem.
 
+Wyrównywanie histogramu zostało zaimplementowane tak, aby była możliwość zastosowania dla dowolnego systemu barw, nie tylko HSV. Przyjmuje ona index kanału lub kanałów, dla których ma zachodzić wyrównywanie histogramu.
+
+```python
+def equallize_histogram(
+    image: np.ndarray, color_index: Union[Tuple[int], List[int], int] = 0
+) -> np.ndarray:
+    """equallize_histogram.
+
+    :param image:
+    :type image: np.ndarray
+    :param color_index:
+    :type color_index: Union[Tuple[int], List[int], int]
+    :rtype: np.ndarray
+    """
+    values = image[..., color_index]
+
+    histogram = create_histogram(values)
+    item_count = image.shape[0] * image.shape[1]
+
+    look_up_table = create_lut(histogram, item_count)
+
+    equallized = image.copy()
+
+    for i, row in enumerate(values):
+        for j, pixel in enumerate(row):
+            mean_value = np.round(pixel.mean())
+
+            if mean_value == 0:
+                continue
+
+            new_mean_value = look_up_table[int(mean_value)]
+            equallized[i, j, color_index] = np.clip(
+                np.round(pixel.astype(np.float32) / mean_value * new_mean_value), 0, 255
+            )
+
+    return equallized
+```
+
+
 ### Zmiana przestrzeni barw
 
 W ramach projektu zaimplementowałem konwersję z przestrzeni barw BGR do HSV. Wynika to z charakteru segmentacji: interesują nas bowiem elementy o zadanym kolorze, dlatego możliwość prostej analizy koloru jest bardzo istotna. Ponieważ efekty nakładane są na oryginalny obraz, konwersja odwrotna nie była implementowana.
@@ -136,6 +175,54 @@ Przestrzeń HSV reprezentowana jest w programie w zakresie 0-255 dla każdej sk�
 \end{figure}
 
 Działanie algorytmu zostało porównane z konwersją przy użyciu biblioteki OpenCV dając wyniki z zakresu błędu przybliżenia wartości zmiennoprzecinkowych do wartości stałych.
+
+```python
+def convert_bgr_to_hsv(image: np.ndarray) -> np.ndarray:
+    """convert_bgr_to_hsv.
+
+    Algorithm inspired by wikipedia formulas for HSV
+    https://en.wikipedia.org/wiki/HSL_and_HSV
+
+    :param image:
+    :type image: np.ndarray
+    :rtype: np.ndarray
+    """
+    result = np.zeros_like(image)
+    image = image / 255
+    R, G, B = 2, 1, 0
+    r = image[..., R]
+    b = image[..., B]
+    g = image[..., G]
+
+    vmax = image.max(2)
+    vmin = image.min(2)
+    diff = vmax - vmin
+
+    cmax = image.argmax(2)
+    non_zeros = diff != 0.0
+
+    where = (cmax == R) & non_zeros
+    result[where, 0] = np.floor(
+        (60.0 * np.mod(((g[where] - b[where]) / diff[where]), 6.0)) / 2.0
+    )
+
+    where = (cmax == G) & non_zeros
+    result[where, 0] = np.floor(
+        (60.0 * (((b[where] - r[where]) / diff[where]) + 2.0)) / 2.0
+    )
+
+    where = (cmax == B) & non_zeros
+    result[where, 0] = np.floor(
+        (60.0 * (((r[where] - g[where]) / diff[where]) + 4.0)) / 2.0
+    )
+
+    where = vmax != 0
+    result[where, 1] = diff[where] / vmax[where] * 255
+
+    result[..., 2] = vmax * 255
+
+    return result
+```
 
 ### Segmentacja
 
@@ -161,6 +248,69 @@ Przy segmentacji wykorzystano również składowe nasycenia i jasności. Poniżs
 
 Następnie zastosowano zmodyfikowany algorytm flood fill do rozdzielenia fragmentów maski na segmenty, wykorzystywany do wypełniania zamkniętych obszarów. Algorytm ten dla kolejnych białych pikseli maski binarnej metodą przeszukiwania wszerz koloruje na losowy, unikalny dla maski kolor wszystkie sąsiadujące z nim piksele.
 
+```python
+def flood_fill(
+    mask: np.ndarray,
+) -> Tuple[np.ndarray, List[np.ndarray]]:
+    """flood_fill.
+
+    :param mask:
+    :type mask: np.ndarray
+    :rtype: Tuple[np.ndarray, np.ndarray]
+    """
+    segmnets_mask = np.zeros((*mask.shape[:2], 3), dtype=np.ubyte)
+    segmnets_mask[np.where(mask == 255)] = (255, 255, 255)
+    colors = []
+    checked = set()
+
+    while True:
+        # find next non flooded segment
+        available_segments = np.stack(
+            np.where((segmnets_mask == (255, 255, 255)).all(2))
+        ).swapaxes(0, 1)
+
+        if available_segments.shape[0] == 0:
+            break
+
+        if len(colors) >= 255 * 255 * 255:
+            raise Exception("Too many segments, no more colors available for them")
+
+        chosen = available_segments[np.random.choice(available_segments.shape[0])]
+
+        while (color := tuple(np.random.randint(0, 255, 3))) in colors:
+            pass
+
+        colors.append(color)
+        point_queue = [chosen]
+
+        while point_queue:
+            chosen = point_queue.pop()
+
+            checked.add(tuple(chosen))
+
+            try:
+                if mask[tuple(chosen)] == 255:
+                    segmnets_mask[tuple(chosen)] = color
+                    for direction in (
+                        (1, 1),
+                        (1, 0),
+                        (1, -1),
+                        (0, 1),
+                        (0, -1),
+                        (-1, 1),
+                        (-1, 0),
+                        (-1, -1),
+                    ):
+                        to_check = chosen + direction
+                        # don't check same point multiple times
+                        if tuple(to_check) not in checked:
+                            point_queue.append(to_check)
+            except IndexError:
+                continue
+
+    return segmnets_mask, colors
+```
+
 Kolejnym etapem segmentacji jest usunięcie zbyt małych i zbyt dużych obszarów. Tutaj usunięto obszary bardzo małe (poniżej 0.01% obszaru całego zdjęcia) oraz bardzo duże (powyżej 9% wielkosći zdjęcia, nawet jak logo zajmuje cały obszar zdjęcia żaden jego element nie będzie miał tak dużej powierzchni).
 
 Wynik podziału na segmenty przedstawiony został na rysunku \ref{segmenty}.
@@ -179,6 +329,82 @@ Wynik podziału na segmenty przedstawiony został na rysunku \ref{segmenty}.
 W celu wyznaczenia cech segmentów skorzystano z momentów centralnych oraz współczynnika Blaira-Blissa. Momenty geometryczne centralne oraz współczynnik Blaira-Blissa cechują się niezmiennosćią niezależnie od dokonanej translacji co jest szczególnie istotne ze względu na dwa rózne trójkąty w logo Kaufland, gdzie jeden jest odbiciem drugiego w pionie, oraz pod kątem wykrywania logo Kaufland niezależnie od jego orientacji.
 
 Dla każdego momentu obliczane są wartości niezmienniczych momentów M1-M6 oraz W4 (współczynnik Blaira-Blissa).
+
+```python
+    def calculate_moments(self) -> None:
+        """calculate_moments.
+
+        Calculates M1 to M7
+
+        :rtype: None
+        """
+        self.moment_0_0 = self.find_moment(0, 0)
+        self.moment_1_0 = self.find_moment(1, 0)
+        self.moment_0_1 = self.find_moment(0, 1)
+
+        self.i_center = self.moment_1_0 / self.moment_0_0
+        self.j_center = self.moment_0_1 / self.moment_0_0
+
+        central_moment_1_1 = self.find_central_moment(1, 1)
+        central_moment_0_2 = self.find_central_moment(0, 2)
+        central_moment_2_0 = self.find_central_moment(2, 0)
+        central_moment_1_2 = self.find_central_moment(1, 2)
+        central_moment_2_1 = self.find_central_moment(2, 1)
+        central_moment_3_0 = self.find_central_moment(3, 0)
+        central_moment_0_3 = self.find_central_moment(0, 3)
+
+        M1 = (central_moment_2_0 + central_moment_0_2) / np.power(self.moment_0_0, 2)
+        M2 = (
+            np.power((central_moment_2_0 - central_moment_0_2), 2)
+            + 4 * np.power(central_moment_1_1, 2)
+        ) / np.power(self.moment_0_0, 4)
+        M3 = (
+            np.power((central_moment_3_0 - 3 * central_moment_1_2), 2)
+            + np.power((3 * central_moment_2_1 - central_moment_0_3), 2)
+        ) / np.power(self.moment_0_0, 5)
+        M4 = (
+            np.power((central_moment_3_0 + central_moment_1_2), 2)
+            + np.power((central_moment_2_1 + central_moment_0_3), 2)
+        ) / np.power(self.moment_0_0, 5)
+        M5 = (
+            (central_moment_3_0 - 3 * central_moment_1_2)
+            * (central_moment_3_0 + central_moment_1_2)
+            * (
+                np.power((central_moment_3_0 + central_moment_1_2), 2)
+                - 3 * np.power((central_moment_2_1 + central_moment_0_3), 2)
+            )
+            + (3 * central_moment_2_1 - central_moment_0_3)
+            * (central_moment_2_1 + central_moment_0_3)
+            * (
+                3 * np.power((central_moment_3_0 + central_moment_1_2), 2)
+                - np.power((central_moment_2_1 + central_moment_0_3), 2)
+            )
+        ) / np.power(self.moment_0_0, 10)
+        M6 = (
+            (central_moment_2_0 - central_moment_0_2)
+            * (
+                (
+                    np.power((central_moment_3_0 + central_moment_1_2), 2)
+                    - np.power((central_moment_2_1 + central_moment_0_3), 2)
+                )
+            )
+            + 4
+            * central_moment_1_1
+            * (central_moment_3_0 + central_moment_1_2)
+            * (central_moment_2_1 + central_moment_0_3)
+        ) / np.power(self.moment_0_0, 7)
+        M7 = (
+            central_moment_2_0 * central_moment_0_2 - np.power(central_moment_1_1, 2)
+        ) / np.power(self.moment_0_0, 4)
+
+        W4 = self.area / np.sqrt(
+            2
+            * np.pi
+            * np.power((self.where - (self.j_center, self.i_center)), (2, 2)).sum()
+        )
+
+        self.central_moments = np.array((M1, M2, M3, M4, M5, M6, M7, W4))
+```
 
 ### Indentyfikacja kształtów
 
