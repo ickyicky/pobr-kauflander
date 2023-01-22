@@ -137,7 +137,7 @@ class SegmentFeatureExtractor:
         :param other:
         :rtype: bool
         """
-        return (self.color == other.color).all()
+        return self.color == other.color
 
     @classmethod
     def get_segments_for(

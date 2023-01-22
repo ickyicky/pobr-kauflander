@@ -27,7 +27,7 @@ def convert_bgr_to_hsv(image: np.ndarray) -> np.ndarray:
 
     where = (cmax == R) & non_zeros
     result[where, 0] = np.floor(
-        (60.0 * np.mod(((g[where] - b[where]) / diff[where]), 6.0)) / 2.0
+        (60.0 * np.mod(((g[where] - b[where]) / diff[where]), 6.0)) / 360.0 * 255
     )
 
     where = (cmax == G) & non_zeros

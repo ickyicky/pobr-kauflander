@@ -2,7 +2,7 @@
 title: "Przetwarzanie Cyfrowe Obrazów"
 subtitle: "rozpoznawanie logo sieci sklepów Kaufland"
 author: [Domański Piotr 293102]
-date: "2022-01-13"
+date: "2022-01-22"
 titlepage: true
 header-includes:
    - \usepackage{multirow}
@@ -203,7 +203,7 @@ def convert_bgr_to_hsv(image: np.ndarray) -> np.ndarray:
 
     where = (cmax == R) & non_zeros
     result[where, 0] = np.floor(
-        (60.0 * np.mod(((g[where] - b[where]) / diff[where]), 6.0)) / 2.0
+        (60.0 * np.mod(((g[where] - b[where]) / diff[where]), 6.0)) / 360.0 * 255
     )
 
     where = (cmax == G) & non_zeros
@@ -228,14 +228,14 @@ def convert_bgr_to_hsv(image: np.ndarray) -> np.ndarray:
 
 Poprawna segmentacja obrazu jest podstawą wykrywania logo. W programie została użyta segmentacja przez progowanie wartości H, S i V.
 
-Ponieważ kolor czerwony leży w przestrzeni barw w okolicach wartości granicznej składowej H (wartości z zakresu 0-20 oraz 170-255 przy 256 stopniowej skali Hue), wykorzystano dwie rozdzielne maski dla wartości H z zakresu 0-20 i 170-255 oraz je połączono. Warto zaznaczyć, że ta maska jest delikatnie rozszerzona o wartości z zakresu różu i pomarańczowego, co było wymagane dla paru przypadków z danych testowych - na obrazku pierwszym obwódka loga kafuland jest delikatnie różowa, a na piątym ciemne elementy są postrzegane jako ciemny brązowy.
+Ponieważ kolor czerwony leży w przestrzeni barw w okolicach wartości granicznej składowej H (wartości z zakresu 0-20 oraz 240-255 przy 256 stopniowej skali Hue), wykorzystano dwie rozdzielne maski dla wartości H z zakresu 0-20 i 170-255 oraz je połączono. Warto zaznaczyć, że ta maska jest delikatnie rozszerzona o wartości z zakresu różu i pomarańczowego, co było wymagane dla paru przypadków z danych testowych - na obrazku pierwszym obwódka loga kafuland jest delikatnie różowa, a na piątym ciemne elementy są postrzegane jako ciemny brązowy.
 
 Przy segmentacji wykorzystano również składowe nasycenia i jasności. Poniższa tabela prezentuje wartości progowe obu masek, a rysunek \ref{mask} porównanie obrazu wsadowego do otrzymanej maski.
 
 | maska     | H min | H max | S min | S max | V min | V max |
 |-----------|-------|-------|-------|-------|-------|-------|
-| czerowny1 | 0     | 20    | 145   | 255   | 40    | 255   |
-| czerwony2 | 170   | 255   | 145   | 255   | 40    | 255   |
+| czerowny1 | 0     | 20    | 145   | 255   | 10    | 255   |
+| czerwony2 | 240   | 255   | 145   | 255   | 10    | 255   |
 
 
 \begin{figure}[H]
